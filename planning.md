@@ -16,18 +16,21 @@ You must have at least 3 tools. The three required tools are listed — add any 
 
 **What it does:**
 <!-- Describe what this tool does in 1–2 sentences -->
+Finds the matching thrift item based on the user's description.
 
 **Input parameters:**
 <!-- List each parameter, its type, and what it represents -->
-- `description` (str): ...
-- `size` (str): ...
-- `max_price` (float): ...
+- `description` (str): User's description of the thrift item they are searching for.
+- `size` (str): The size of the thrift item being searched. "S"=small; "M"=medium; "L"=large.
+- `max_price` (float): The maximum price the user is willing to pay for the thrift item.
 
 **What it returns:**
 <!-- Describe the return value — what fields does a result contain? -->
+The result should contain a message with the top 3 matching listings, displayeing the name of the item followed by it's price, the platform it was found on, and condition status.
 
 **What happens if it fails or returns nothing:**
 <!-- What should the agent do if no listings match? -->
+The agent should tell the user that no listings were found and suggest different size, max price, or description.
 
 ---
 
@@ -35,17 +38,20 @@ You must have at least 3 tools. The three required tools are listed — add any 
 
 **What it does:**
 <!-- Describe what this tool does in 1–2 sentences -->
+Suggests an outfit combination using the new thrifted item and the user’s wardrobe.
 
 **Input parameters:**
 <!-- List each parameter, its type, and what it represents -->
-- `new_item` (dict): ...
-- `wardrobe` (dict): ...
+- `new_item` (dict): The thrifted item found in 'search_listings'.
+- `wardrobe` (dict): Items from the user's wardrobe.
 
 **What it returns:**
 <!-- Describe the return value -->
+A detailed outfit suggestion combining the thrifted item and the user's clothes. The message should be brief, descriptive, and contain instructions on how to put the outfit together.
 
 **What happens if it fails or returns nothing:**
 <!-- What should the agent do if the wardrobe is empty or no outfit can be suggested? -->
+The agent should suggest a basic outfit or ask user to add more wardrobe items.
 
 ---
 
@@ -53,16 +59,19 @@ You must have at least 3 tools. The three required tools are listed — add any 
 
 **What it does:**
 <!-- Describe what this tool does in 1–2 sentences -->
+Generates a short, shareable outfit description.
 
 **Input parameters:**
 <!-- List each parameter, its type, and what it represents -->
-- `outfit` (...): ...
+- `outfit` (str): The suggested outfit description created in 'suggest_outfit'.
 
 **What it returns:**
 <!-- Describe the return value -->
+A short, instagram-like description of the complete outfit, similar to that of a caption on a social media post.
 
 **What happens if it fails or returns nothing:**
 <!-- What should the agent do if the outfit data is incomplete? -->
+The agent should return an error message stating that the outfit is incomplete.
 
 ---
 
@@ -91,7 +100,7 @@ You must have at least 3 tools. The three required tools are listed — add any 
 For each tool, describe the specific failure mode you're handling and what the agent does in response.
 
 | Tool | Failure mode | Agent response |
-|------|-------------|----------------|
+| ---- | ------------ | -------------- |
 | search_listings | No results match the query | |
 | suggest_outfit | Wardrobe is empty | |
 | create_fit_card | Outfit input is missing or incomplete | |
@@ -138,12 +147,16 @@ Write out what a full user interaction looks like from start to finish — tool 
 
 **Step 1:**
 <!-- What does the agent do first? Which tool is called? With what input? -->
+The agent recognizes the user's request for an item and calls 'search_listings(description="vintage graphic tee", size="M", max_price=30.0)'. This tool searches the mock listings dataset and returns matching items sorted by relevance.
 
 **Step 2:**
 <!-- What happens next? What was returned from step 1? What tool is called now? -->
+'search_listings' returns the top 3 matches and selects the best item from the results. The chosen item will be saved in the session state as the 'new_item'. After a listing is found, the agent calls 'suggest_outfit(new_item=selected_item, wardrobe=user_wardrobe)'. This tool compares the selected thrifted item with the user's wardrobe, returning a outfit idea suggestion.
 
 **Step 3:**
 <!-- Continue until the full interaction is complete -->
+After an outfit is suggested, the agent calls 'create_fit_card(outfit=suggested outfit, new_item=selected listing)'. This tool turns the outfit recommendation into a short, shareable description. It should sound like something someone might post or send to a friend rather than a plain description.
 
 **Final output to user:**
 <!-- What does the user actually see at the end? -->
+The user sees a concise response that includes the thrifted item found, its price and platform, the suggested outfit using their wardrobe, and the final fit card.
