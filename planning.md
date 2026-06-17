@@ -26,11 +26,12 @@ Finds the matching thrift item based on the user's description.
 
 **What it returns:**
 <!-- Describe the return value — what fields does a result contain? -->
-The result should contain a list of up 3 matching listings followed by a short description of the items: name of the item followed by its price, the platform it was found on, and condition status. Only the top listing will be chosen.
+The result should contain a list of up 3 matching listings. Only the top listing will be chosen.
 
 **What happens if it fails or returns nothing:**
 <!-- What should the agent do if no listings match? -->
-The agent should tell the user that no listings were found and suggest different size, max price, or description.
+- The agent should return an empty list.
+- The agent should tell the user that no listings were found and suggest different size, max price, or description.
 
 ---
 
@@ -42,7 +43,7 @@ Suggests an outfit combination using the new thrifted item and the user’s ward
 
 **Input parameters:**
 <!-- List each parameter, its type, and what it represents -->
-- `new_item` (dict): The thrifted item found in `search_listings`.
+- `new_item` (dict): The thrifted item found in `search_listings()`.
 - `wardrobe` (dict): Items from the user's wardrobe.
 
 **What it returns:**
@@ -63,7 +64,7 @@ Generates a short, shareable outfit description.
 
 **Input parameters:**
 <!-- List each parameter, its type, and what it represents -->
-- `outfit` (str): The suggested outfit description created in `suggest_outfit`.
+- `outfit` (str): The suggested outfit description created in `suggest_outfit()`.
 
 **What it returns:**
 <!-- Describe the return value -->
