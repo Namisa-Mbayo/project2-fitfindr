@@ -227,8 +227,7 @@ Keep the tone brief and friendly. Do not suggest items outside their wardrobe. D
         if not result:
             return (
                 "An outfit suggestion could not be created. "
-                "Please check that your wardrobe has enough items and try again."
-            )
+                "Please ensure a thrifted item was provided and try again.")
 
         return result
 

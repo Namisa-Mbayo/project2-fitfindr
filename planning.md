@@ -52,7 +52,7 @@ A detailed outfit suggestion combining the thrifted item and the user's clothes.
 
 **What happens if it fails or returns nothing:**
 <!-- What should the agent do if the wardrobe is empty or no outfit can be suggested? -->
-The agent should return an error message stating that the outfit is incomplete if no outfit can be suggested. If the wardrobe is empty then the agent should ask the user to add more wardrobe items.
+The agent should return an error message stating that the outfit could not be created and to ensure a thrifted item exists. If the wardrobe is empty then the agent should return basic styling advice regarding the item.
 
 ---
 
@@ -88,7 +88,7 @@ The agent should return an error message stating that the fit card cannot be cre
 <!-- Describe the logic your planning loop uses. What does it look at? What conditions change its behavior? How does it know when it's done? -->
 The agent will use a conditional loop that checks the session state after each tool call before it decides what to do next.
 The agent starts by analyzing the user's query and parsing it into `description`, `size`, `max_price`. Using that information, it will call `search_listings(description, size, max_price)`. If no listings are found, the agent returns a failure message telling the user that no listings were found and what to try differently. It does not call any of the other tools because there is no item to style for `suggest_outfit`. If listings are found, the best match is saved as `selected_item` in session state.
-Once `selected_item` is saved the agent calls `suggest_outfit(new_item=selected_item, wardrobe=user_wardrobe)`. After running, it checks if an outfit suggestion was created. If no outfit suggestion was created or is incomplete, the agent returns an error message stating that the outfit is incomplete. If the wardrobe is empty or too small, the agent will ask the user to add more wardrobe items. If an outfit suggestion was created, the agent saves it in session state as `outfit_suggestion` and calls `create_fit_card(outfit=outfit_suggestion, new_item=selected_item)`. If the fit_card fails, the agent returns an error message stating that the fit card cannot be created. If the fit card is created successfully, the agent saves it in session state as `fit_card` and returns it as the final response.
+Once `selected_item` is saved the agent calls `suggest_outfit(new_item=selected_item, wardrobe=wardrobe)`. After running, it checks if an outfit suggestion was created. If no outfit suggestion was created, the agent returns an error message stating that the outfit could not be created and to ensure a thrifted item exists. If the wardrobe is empty, the agent will return basic outfit advice. If an outfit suggestion was created, the agent saves it in session state as `outfit_suggestion` and returns the suggestion. Once that's done it calls `create_fit_card(outfit=outfit_suggestion, new_item=selected_item)`. If the fit_card fails, the agent returns an error message stating that the fit card cannot be created. If the fit card is created successfully, the agent saves it in session state as `fit_card` and returns it as the final response.
 The loop ends when the agent has either created a fit card or returns an error message.
 
 ---
@@ -123,7 +123,7 @@ For each tool, describe the specific failure mode you're handling and what the a
 | Tool | Failure mode | Agent response |
 | ---- | ------------ | -------------- |
 | search_listings | No results match the query | "No listings were found that matched your request. Try broadening the description, choosing a different size, or increasing the budget." |
-| suggest_outfit | Wardrobe is empty | "The wardrobe is empty. Please add more wardrobe items for a more personalized suggestion." |
+| suggest_outfit | Wardrobe is empty | Returns basic, general styling advice for the thrifted item |
 | create_fit_card | Outfit input is missing or incomplete | "The fit card cannot be created without both a selected item and an outfit suggestion." |
 
 ---
@@ -140,33 +140,40 @@ For each tool, describe the specific failure mode you're handling and what the a
      the planning loop and each individual tool. -->
 ```mermaid
      flowchart TD
-    A[User query] --> B[Planning Loop]
+    A[/User query\] --> B[Planning Loop]
 
     B --> C[Parse user query: description, size, max_price]
-    C --> D[Call `search_listings`]
+    C --> D{{Call `search_listings: description, size, max_price`}}
 
     D --> E{Listings found?}
     E -- No --> F[Save error in session state]
     F --> G[Return error message: no listings found, suggest broader search]
 
-    E -- Yes --> H[Save selected_item in session state]
-    H --> I[Return details of selected_item: item name, price, platform, condition]
-    I --> J[Call `suggest_outfit` with selected_item and wardrobe]
+    E -- Yes --> H[Save the best listing as `selected_item` in session state]
+    H --> I[Return a list of the top 3 matching listings]
+    I --> J{{Call `suggest_outfit: new_item=selected_item, wardrobe=wardrobe`}}
 
     J --> K{Outfit created?} 
-    K -- No or empty wardrobe --> L[Save error in session state]
-    L --> M[Return error message: outfit could not be created, ask to add wardrobe items]
+    K -- No --> L[Save error in session state]
+    L --> M[Return error message: outfit could not be created due to incomplete data]
 
-    K -- Yes --> N[Save outfit_suggestion in session state]
-    N --> O[Return outfit suggestion]
-    O --> P[Call `create_fit_card` with outfit_suggestion and selected_item] 
+    K-- created with empty wardrobe --> O[Save as `outfit_suggestion` in session state]
+    O--> P[Return general outfit styling advice]
+    P --> S{{Call `create_fit_card: outfit=outfit_suggestion, new_item=selected_item`}}
 
-    P --> Q{Fit card created?} 
-    Q -- No --> R[Save error in session state]
-    R --> S[Return error message: fit card could not be created due to incomplete outfit data] 
+    K-- Yes --> Q[Save as `outfit_suggestion` in session state]
+    Q --> R[Return detailed outfit suggestion]
+    R --> S
 
-    Q -- Yes --> T[Save fit_card in session state] 
-    T --> U[Return fit card as final, shareable outfit description]
+    S --> T{Fit card created?}
+    T -- No --> U[Save error in session state]
+    U --> V[Return error message: fit card could not be created due to incomplete outfit data]
+
+    T -- Yes --> W[Save as `fit_card` in session state] 
+    W --> X[Return fit card as shareable outfit description]
+    X --> Y[Return final response: item, outfit, fit card]
+
+    Y --> Z[\Return session/]
 ```
 
 ---
