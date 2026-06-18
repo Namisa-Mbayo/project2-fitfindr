@@ -19,7 +19,7 @@ Usage (once implemented):
 """
 
 from tools import search_listings, suggest_outfit, create_fit_card
-
+import re
 
 # ── session state ─────────────────────────────────────────────────────────────
 
@@ -46,6 +46,44 @@ def _new_session(query: str, wardrobe: dict) -> dict:
 
 
 # ── planning loop ─────────────────────────────────────────────────────────────
+def _parse_query(query: str) -> dict:
+    """
+    Extract a rough description, size, and max_price from the user's query.
+
+    This parser is intentionally simple:
+    - max_price comes from phrases like "under $30" or "$30"
+    - size comes from phrases like "size M" or "in size M"
+    - description is the query with price and size phrases removed
+    """
+    parsed = {
+        "description": query.strip(),
+        "size": None,
+        "max_price": None,
+    }
+
+    # Extract price, e.g. "under $30", "$30", "under 30"
+    price_match = re.search(r"(?:under\s*)?\$?(\d+(?:\.\d{1,2})?)", query, re.IGNORECASE)
+    if price_match:
+        parsed["max_price"] = float(price_match.group(1))
+
+    # Extract size, e.g. "size M", "in size M"
+    size_match = re.search(r"\bsize\s+([A-Za-z0-9./-]+)\b", query, re.IGNORECASE)
+    if size_match:
+        parsed["size"] = size_match.group(1).upper()
+
+    # Remove price and size phrases from description
+    description = query
+    description = re.sub(r"(?:under\s*)?\$?\d+(?:\.\d{1,2})?", "", description, flags=re.IGNORECASE)
+    description = re.sub(r"\b(?:in\s+)?size\s+[A-Za-z0-9./-]+\b", "", description, flags=re.IGNORECASE)
+
+    # Clean common filler words
+    description = description.replace(",", " ")
+    description = re.sub(r"\s+", " ", description).strip()
+
+    parsed["description"] = description
+
+    return parsed
+
 
 def run_agent(query: str, wardrobe: dict) -> dict:
     """
@@ -93,8 +131,68 @@ def run_agent(query: str, wardrobe: dict) -> dict:
     of planning.md — your implementation should match what you described there.
     """
     # TODO: implement the planning loop
+    # Step 1: Initialize session
     session = _new_session(query, wardrobe)
-    session["error"] = "Planning loop not yet implemented."
+
+    # Guard against empty query
+    #if not query or not query.strip():
+        #session["error"] = "Please enter what kind of thrifted item you're looking for."
+        #return session
+    
+    # Step 2: Parse user query
+    parsed = _parse_query(query)
+    session["parsed"] = parsed
+
+    description = parsed["description"]
+    size = parsed["size"]
+    max_price = parsed["max_price"]
+
+    # Step 3: Call search_listings()
+    search_results = search_listings(
+        description=description,
+        size=size,
+        max_price=max_price,
+    )
+    session["search_results"] = search_results
+    
+    # Branch: no results found
+    if not search_results:
+        session["error"] = (
+            "No listings matched your request. Try broadening the description, "
+            "choosing a different size, or increasing your max price."
+        )
+        return session
+    
+    # Step 4: Select top item
+    selected_item = search_results[0]
+    session["selected_item"] = selected_item
+
+    # Step 5: Call suggest_outfit()
+    outfit_suggestion = suggest_outfit(
+        new_item=selected_item,
+        wardrobe=wardrobe,
+    )
+    session["outfit_suggestion"] = outfit_suggestion
+
+    if not outfit_suggestion or not outfit_suggestion.strip():
+        session["error"] = (
+            "I found a listing, but I couldn't create an outfit suggestion for it. "
+            "Please ensure your wardrobe has enough items and try again.")
+        return session
+    
+    # Step 6: Call create_fit_card
+    fit_card = create_fit_card(
+        outfit=outfit_suggestion,
+        new_item=selected_item,
+    )
+    session["fit_card"] = fit_card
+
+    if not fit_card or not fit_card.strip():
+        session["error"] = (
+            "I created an outfit suggestion, but I couldn't create a fit card from it."
+        )
+        return session
+    
     return session
 
 

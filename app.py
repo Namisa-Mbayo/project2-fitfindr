@@ -44,7 +44,47 @@ def handle_query(user_query: str, wardrobe_choice: str) -> tuple[str, str, str]:
            session["fit_card"].
     """
     # TODO: implement this function
-    return "Agent not yet implemented.", "", ""
+    # Step 1: Guard against empty query
+    if not user_query or not user_query.strip():
+        return (
+            "Please enter what kind of thrifted item you're looking for.",
+            "",
+            "",
+        )
+    
+    # Step 2: Select wardrobe
+    if wardrobe_choice == "Empty wardrobe (new user)":
+        wardrobe = get_empty_wardrobe()
+    else:
+        wardrobe = get_example_wardrobe()
+
+    # Step 3: Run agent
+    session = run_agent(user_query.strip(), wardrobe)
+
+    # Step 4: Handle error
+    if session["error"]:
+        return session["error"], "", ""
+    
+    # Step 5: Format selected item for listing
+    item = session["selected_item"]
+
+    listing_text = (
+        f"{item.get('title', 'Unknown item')}\n\n"
+        f"Price: ${item.get('price', 'Unknown')}\n"
+        f"Platform: {item.get('platform', 'Unknown')}\n"
+        f"Condition: {item.get('condition', 'Unknown')}\n"
+        f"Size: {item.get('size', 'Unknown')}\n"
+        f"Brand: {item.get('brand') or 'Unknown'}\n"
+        f"Category: {item.get('category', 'Unknown')}\n"
+        f"Colors: {', '.join(item.get('colors', [])) or 'Unknown'}\n"
+        f"Style tags: {', '.join(item.get('style_tags', [])) or 'None'}\n\n"
+        f"{item.get('description', '')}"
+    )
+
+    outfit_suggestion = session["outfit_suggestion"] or ""
+    fit_card = session["fit_card"] or ""
+
+    return listing_text, outfit_suggestion, fit_card
 
 
 # ── interface ─────────────────────────────────────────────────────────────────
