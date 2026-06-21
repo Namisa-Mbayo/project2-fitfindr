@@ -98,7 +98,6 @@ The loop ends when the agent has either created a fit card or returns an error m
 **How does information from one tool get passed to the next?**
 <!-- Describe how your agent stores and accesses state within a session. What data is tracked? How is it passed between tool calls? -->
 The agent stores information in a session state dictionary and is updated after each tool call.
-
 The session state tracks:
 
 - user_query: the original request
